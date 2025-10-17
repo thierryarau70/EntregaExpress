@@ -1,7 +1,7 @@
 <!-- components/map/DeliveryMap.vue -->
 <template>
   <div class="relative">
-    <!-- Painel de busca (z-index alto p/ ficar acima do mapa) -->
+    <!-- Painel de busca -->
     <div
         class="absolute left-4 top-4 z-[1000] pointer-events-auto bg-white/90 backdrop-blur
              px-3 py-3 rounded-lg shadow max-w-[96%] sm:max-w-md space-y-2"
@@ -13,13 +13,23 @@
 
       <div class="grid grid-cols-[auto,1fr,auto] items-center gap-2">
         <span class="inline-flex h-6 w-6 items-center justify-center text-xs font-bold rounded-full bg-emerald-100 text-emerald-700">A</span>
-        <InputText v-model="queryA" class="w-full" placeholder="CEP ou endereço da Coleta (A)" />
+        <InputText
+            v-model="queryA"
+            class="w-full"
+            placeholder="CEP ou endereço da Coleta (A)"
+            @keyup.enter="searchA"
+        />
         <Button size="small" @click="searchA" :loading="loadingA">Buscar</Button>
       </div>
 
       <div class="grid grid-cols-[auto,1fr,auto] items-center gap-2">
         <span class="inline-flex h-6 w-6 items-center justify-center text-xs font-bold rounded-full bg-sky-100 text-sky-700">B</span>
-        <InputText v-model="queryB" class="w-full" placeholder="CEP ou endereço do Destino (B)" />
+        <InputText
+            v-model="queryB"
+            class="w-full"
+            placeholder="CEP ou endereço do Destino (B)"
+            @keyup.enter="searchB"
+        />
         <Button size="small" @click="searchB" :loading="loadingB">Buscar</Button>
       </div>
     </div>
@@ -31,13 +41,15 @@
 
 <script setup lang="ts">
 /**
- * Componente de mapa Leaflet com dois pinos (A/B) e busca por endereço.
+ * Mapa Leaflet com dois pinos (A/B), busca por endereço/CEP via Nominatim
  * - Centro inicial: Boa Vista - Roraima
- * - Sem polilinha ligando os pontos (somente pinos arrastáveis)
+ * - Sem polilinha (apenas pinos arrastáveis)
+ * - Instrumentação de eventos Clarity
  */
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import { useToast } from '@/composables/useToast'
+import { useAnalytics } from '@/composables/useAnalytics'
 
 type LatLng = { lat: number; lng: number }
 
@@ -52,9 +64,11 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   (e: 'update:pickup', value: LatLng): void
   (e: 'update:dropoff', value: LatLng): void
+  (e: 'marker-drag', payload: { which: 'A' | 'B'; lat: number; lng: number }): void
 }>()
 
 const toast = useToast()
+const { track } = useAnalytics()
 
 const mapEl = ref<HTMLDivElement>()
 let map: any
@@ -76,7 +90,6 @@ const { $L } = useNuxtApp()
 onMounted(() => {
   if (!mapEl.value) return
 
-  // Inicializa mapa
   const center = props.pickup || RR_CENTER
 
   map = $L.map(mapEl.value, { zoomControl: false }).setView(center, DEFAULT_ZOOM)
@@ -102,9 +115,19 @@ onMounted(() => {
   const group = $L.featureGroup([markerA, markerB])
   map.fitBounds(group.getBounds().pad(0.25))
 
-  // Emite updates ao terminar de arrastar
-  markerA.on('dragend', () => emit('update:pickup', toLatLng(markerA.getLatLng())))
-  markerB.on('dragend', () => emit('update:dropoff', toLatLng(markerB.getLatLng())))
+  // Emite updates ao terminar de arrastar + track
+  markerA.on('dragend', () => {
+    const v = toLatLng(markerA.getLatLng())
+    emit('update:pickup', v)
+    emit('marker-drag', { which: 'A', lat: v.lat, lng: v.lng })
+    track('marker_drag_a', { lat: v.lat.toFixed(5), lng: v.lng.toFixed(5) })
+  })
+  markerB.on('dragend', () => {
+    const v = toLatLng(markerB.getLatLng())
+    emit('update:dropoff', v)
+    emit('marker-drag', { which: 'B', lat: v.lat, lng: v.lng })
+    track('marker_drag_b', { lat: v.lat.toFixed(5), lng: v.lng.toFixed(5) })
+  })
 })
 
 onBeforeUnmount(() => map?.remove?.())
@@ -130,15 +153,18 @@ async function geocode(q: string): Promise<LatLng | null> {
 
 async function searchA() {
   loadingA.value = true
+  track('search_a', { q: queryA.value.slice(0, 60) })
   try {
     const ll = await geocode(queryA.value)
     if (!ll) {
       toast.error('Não encontramos esse endereço/CEP para Coleta (A).')
+      track('search_a_not_found')
       return
     }
     markerA.setLatLng(ll)
     map.flyTo(ll, 15, { duration: 0.5 })
     emit('update:pickup', ll)
+    track('search_a_ok', { lat: ll.lat.toFixed(5), lng: ll.lng.toFixed(5) })
   } finally {
     loadingA.value = false
   }
@@ -146,15 +172,18 @@ async function searchA() {
 
 async function searchB() {
   loadingB.value = true
+  track('search_b', { q: queryB.value.slice(0, 60) })
   try {
     const ll = await geocode(queryB.value)
     if (!ll) {
       toast.error('Não encontramos esse endereço/CEP para Destino (B).')
+      track('search_b_not_found')
       return
     }
     markerB.setLatLng(ll)
     map.flyTo(ll, 15, { duration: 0.5 })
     emit('update:dropoff', ll)
+    track('search_b_ok', { lat: ll.lat.toFixed(5), lng: ll.lng.toFixed(5) })
   } finally {
     loadingB.value = false
   }
@@ -162,18 +191,14 @@ async function searchB() {
 </script>
 
 <style scoped>
-/* Mantém o mapa atrás do painel de busca */
-:deep(.leaflet-container) {
-  z-index: 0;
-}
+/* Mantém o mapa atrás do painel */
+:deep(.leaflet-container) { z-index: 0; }
 
-/* Panes/controles do Leaflet ficam abaixo do nosso painel (que tem z-[1000]) */
+/* Panes/controles do Leaflet abaixo do painel (o painel tem z-[1000]) */
 :deep(.leaflet-pane),
-:deep(.leaflet-control-container) {
-  z-index: 200 !important;
-}
+:deep(.leaflet-control-container) { z-index: 200 !important; }
 
-/* Ajuste leve do tooltip dos marcadores */
+/* Tooltip dos marcadores */
 :deep(.leaflet-tooltip) {
   padding: 4px 8px;
   font-size: 12px;
