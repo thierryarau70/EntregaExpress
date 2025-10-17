@@ -2,7 +2,7 @@
 export default defineNuxtPlugin(() => {
     if (!process.client) return
 
-    const GA_ID = 'G-44VGHSMZ3K'
+    const GA_ID = 'G-BD7SE8NNNG'
 
     // injeta script
     const script = document.createElement('script')
