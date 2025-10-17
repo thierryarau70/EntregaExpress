@@ -182,6 +182,7 @@ function requestDelivery() {
     dropoff: dropoff.value,
     status: 'ativa'
   })
+  window.clarity?.('event', 'solicitar_entrega')
   toast.success('Entrega solicitada!')
 }
 
@@ -211,6 +212,7 @@ onMounted(() => {
 })
 
 function accept(item: Item) {
+  window.clarity?.('event', 'courier_accept')
   available.value = available.value.filter(i => i.id !== item.id)
   active.value.unshift(item)
   toast.success(`Entrega #${item.id} aceita!`)
@@ -221,4 +223,18 @@ function logout() {
   auth.logout?.()
   navigateTo('/login')
 }
+
+import { useClarity } from '~/plugins/clarity.client'
+
+onMounted(() => {
+  useClarity()
+
+  window.clarity?.('event', 'view_new_delivery')
+})
+
+watch(role, (r) => {
+  window.clarity?.('event', `troca_role_${r}`)
+})
+
+
 </script>
