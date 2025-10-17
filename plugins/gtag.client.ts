@@ -4,13 +4,11 @@ export default defineNuxtPlugin(() => {
 
     const GA_ID = 'G-BD7SE8NNNG'
 
-    // injeta script
     const script = document.createElement('script')
     script.async = true
     script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`
     document.head.appendChild(script)
 
-    // inicializa
     window.dataLayer = window.dataLayer || []
     function gtag(...args: any[]) { (window as any).dataLayer.push(args) }
     gtag('js', new Date())
