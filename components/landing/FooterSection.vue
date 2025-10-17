@@ -10,7 +10,7 @@
         <button
             class="px-6 py-3 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold shadow-lg hover:from-orange-600 hover:to-orange-700 transition"
         >
-          Começar Agora
+          <NuxtLink to="/login">Começar Agora</NuxtLink>
         </button>
         <input
             type="email"
@@ -46,7 +46,7 @@
           <h3 class="font-semibold mb-3">Para Você</h3>
           <ul class="space-y-2 text-gray-400">
             <li><a href="/deliveries/new" class="hover:text-white">Solicitar Entrega</a></li>
-            <li><a href="/register?role=courier" class="hover:text-white">Tornar-se Entregador</a></li>
+            <li><a href="/deliveries/new" class="hover:text-white">Tornar-se Entregador</a></li>
             <li><a href="/tracking" class="hover:text-white">Rastreamento</a></li>
           </ul>
         </div>
@@ -67,3 +67,7 @@
     </div>
   </footer>
 </template>
+<script setup lang="ts">
+const router = useRouter()
+
+</script>

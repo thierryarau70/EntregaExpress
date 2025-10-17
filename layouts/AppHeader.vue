@@ -13,7 +13,7 @@
       </ul>
 
       <NuxtLink
-          to="/register"
+          to="/login"
           class="px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold shadow-[0_8px_24px_rgba(234,88,12,0.35)] hover:from-orange-600 hover:to-orange-700 transition"
       >
         Começar Agora
