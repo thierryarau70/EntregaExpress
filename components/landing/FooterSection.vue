@@ -7,11 +7,13 @@
         Junte-se a milhares de usuários que confiam na Entrega Express para suas entregas
       </p>
       <div class="mt-8 flex justify-center gap-4">
+        <NuxtLink to="/login">
         <button
             class="px-6 py-3 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold shadow-lg hover:from-orange-600 hover:to-orange-700 transition"
         >
-          <NuxtLink to="/login">Começar Agora</NuxtLink>
+          Começar Agora
         </button>
+        </NuxtLink>
         <input
             type="email"
             placeholder="Seu e-mail"
