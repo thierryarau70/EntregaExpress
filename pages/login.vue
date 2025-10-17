@@ -90,6 +90,14 @@
           >
             Criar Conta
           </button>
+
+          <button
+              class="mt-4 w-full rounded-lg bg-red-600 text-white font-medium py-2 hover:bg-red-700 transition"
+              @click="throwError"
+          >
+            💥 Testar Erro Global
+          </button>
+
         </form>
       </div>
     </div>
@@ -115,6 +123,10 @@ const loginSchema = yup.object({
   password: yup.string().min(4, 'Mínimo 4 caracteres').required('Informe a senha'),
 })
 
+function throwError() {
+  // erro proposital
+  throw new Error('Erro de teste do Clarity/GA4 (gerado manualmente no botão de login)')
+}
 
 async function onLogin() {
   loginErrors.email = loginErrors.password = undefined
