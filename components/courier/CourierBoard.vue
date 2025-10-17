@@ -21,7 +21,8 @@
               </div>
               <button
                   class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-white bg-emerald-600 hover:bg-emerald-700"
-                  @click="$emit('accept', d)"
+                  @click="onAccept(d)"
+                  v-track:click="'courier_accept_click'"
               >
                 <i class="pi pi-check"></i> Aceitar
               </button>
@@ -75,15 +76,27 @@
 </template>
 
 <script setup lang="ts">
+import { useAnalytics } from '@/composables/useAnalytics'
 type LatLng = { lat: number; lng: number }
 type Item = { id: number; pickup: LatLng; dropoff: LatLng }
 
-defineProps<{
+const props = defineProps<{
   available: Item[]
   active: Item[]
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'accept', item: Item): void
 }>()
+
+const { track } = useAnalytics()
+
+onMounted(() => {
+  track('courier_board_view', { avail: props.available?.length || 0, active: props.active?.length || 0 })
+})
+
+function onAccept(d: Item) {
+  track('courier_accept', { id: d.id })
+  emit('accept', d)
+}
 </script>

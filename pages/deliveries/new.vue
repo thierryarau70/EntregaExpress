@@ -14,14 +14,16 @@
             <button
                 class="px-4 py-1 rounded-full text-xs"
                 :class="role === 'client' ? 'bg-white shadow font-semibold' : ''"
-                @click="role='client'"
+                @click="switchRole('client')"
+                v-track:click="'role_client_click'"
             >
               <i class="pi pi-compass mr-1" /> Cliente
             </button>
             <button
                 class="px-4 py-1 rounded-full text-xs"
                 :class="role === 'courier' ? 'bg-white shadow font-semibold' : ''"
-                @click="role='courier'"
+                @click="switchRole('courier')"
+                v-track:click="'role_courier_click'"
             >
               <i class="pi pi-cog mr-1" /> Entregador
             </button>
@@ -32,7 +34,7 @@
             <span>{{ userEmail }}</span>
           </div>
 
-          <a href="/" class="text-gray-500 hover:text-red-500 flex items-center gap-2" @click.prevent="logout">
+          <a href="/" class="text-gray-500 hover:text-red-500 flex items-center gap-2" @click.prevent="logout" v-track:click="'logout_click'">
             <i class="pi pi-sign-out"></i> Sair
           </a>
         </div>
@@ -54,7 +56,11 @@
               Defina os pontos de coleta e entrega para iniciar
             </p>
 
-            <DeliveryMap v-model:pickup="pickup" v-model:dropoff="dropoff" />
+            <DeliveryMap
+                v-model:pickup="pickup"
+                v-model:dropoff="dropoff"
+                @marker-drag="onMarkerDrag"
+            />
 
             <div class="grid sm:grid-cols-2 gap-3">
               <div class="text-sm">
@@ -83,6 +89,7 @@
                        bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold
                        shadow-[0_10px_30px_rgba(234,88,12,.35)] hover:from-orange-600 hover:to-orange-700 transition"
                   @click="requestDelivery"
+                  v-track:click="'solicitar_entrega_click'"
               >
                 <i class="pi pi-send"></i> Solicitar Entrega
               </button>
@@ -111,8 +118,8 @@
                   <span
                       class="px-2.5 py-1 rounded-full text-xs"
                       :class="d.status === 'concluida'
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-amber-100 text-amber-700'"
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'bg-amber-100 text-amber-700'"
                   >
                     {{ d.status }}
                   </span>
@@ -148,31 +155,41 @@ import DeliveryMap from '@/components/map/DeliveryMap.vue'
 import CourierBoard from '@/components/courier/CourierBoard.vue'
 import { useToast } from '@/composables/useToast'
 import { useAuthStore } from '@/stores/auth'
-
+import { useAnalytics } from '@/composables/useAnalytics'
 
 definePageMeta({
   layout: 'dashboard'
 })
 
-const auth = useAuthStore()
-const toast = useToast()
-
-// ---------- Tipos ----------
 type LatLng = { lat: number; lng: number }
 type Delivery = { id: number; pickup: LatLng; dropoff: LatLng; status: 'ativa' | 'concluida' }
 type Item = { id: number; pickup: LatLng; dropoff: LatLng }
 
-// ---------- Usuário + papel atual ----------
-const userEmail = 'thierry@gmail.com'
-const role = ref<'client' | 'courier'>('client')
+const auth = useAuthStore()
+const toast = useToast()
+const { track, set, identify } = useAnalytics()
 
-// ---------- CLIENTE ----------
+const userEmail = 'thierry@gmail.com'
+identify('user_thierry') // NÃO envie PII real em produção
+
+const role = ref<'client' | 'courier'>('client')
 const pickup = ref<LatLng | null>(null)
 const dropoff = ref<LatLng | null>(null)
 const deliveries = ref<Delivery[]>([])
 
+function switchRole(next: 'client' | 'courier') {
+  role.value = next
+  set('role', next)
+  track('role_switch', { role: next })
+}
+
+function onMarkerDrag(payload: { which: 'A' | 'B'; lat: number; lng: number }) {
+  track('marker_drag', { which: payload.which, lat: payload.lat.toFixed(5), lng: payload.lng.toFixed(5) })
+}
+
 function requestDelivery() {
   if (!pickup.value || !dropoff.value) {
+    track('solicitar_entrega_error', { reason: 'missing_points' })
     return toast.error('Defina os pontos A e B no mapa')
   }
   const id = deliveries.value.length + 1
@@ -182,59 +199,52 @@ function requestDelivery() {
     dropoff: dropoff.value,
     status: 'ativa'
   })
-  window.clarity?.('event', 'solicitar_entrega')
+  track('solicitar_entrega', {
+    id,
+    a_lat: pickup.value.lat.toFixed(5),
+    a_lng: pickup.value.lng.toFixed(5),
+    b_lat: dropoff.value.lat.toFixed(5),
+    b_lng: dropoff.value.lng.toFixed(5)
+  })
   toast.success('Entrega solicitada!')
 }
 
-// ---------- ENTREGADOR (simulação) ----------
-const available = ref<Item[]>([]) // entregas disponíveis
-const active = ref<Item[]>([])    // entregas aceitas (ativas)
+// ENTREGADOR (simulação)
+const available = ref<Item[]>([])
+const active = ref<Item[]>([])
 
-// Simula “chegada” de pedidos após alguns segundos
 onMounted(() => {
-  // 1º pedido
+  track('view_new_delivery')
+  // Simula novas entregas
   setTimeout(() => {
     available.value.push({
       id: 101,
       pickup: { lat: -23.555, lng: -46.64 },
       dropoff: { lat: -23.575, lng: -46.62 }
     })
+    track('available_append', { id: 101 })
   }, 1500)
 
-  // 2º pedido
   setTimeout(() => {
     available.value.push({
       id: 102,
       pickup: { lat: -23.565, lng: -46.63 },
-      dropoff: { lat: -23.585, lng: -46.60 }
+      dropoff: { lat: -23.585, lng: -46.6 }
     })
+    track('available_append', { id: 102 })
   }, 3500)
 })
 
 function accept(item: Item) {
-  window.clarity?.('event', 'courier_accept')
   available.value = available.value.filter(i => i.id !== item.id)
   active.value.unshift(item)
+  track('courier_accept', { id: item.id })
   toast.success(`Entrega #${item.id} aceita!`)
 }
 
-// ---------- Sair ----------
 function logout() {
+  track('logout')
   auth.logout?.()
   navigateTo('/login')
 }
-
-import { useClarity } from '~/plugins/clarity.client'
-
-onMounted(() => {
-  useClarity()
-
-  window.clarity?.('event', 'view_new_delivery')
-})
-
-watch(role, (r) => {
-  window.clarity?.('event', `troca_role_${r}`)
-})
-
-
 </script>
