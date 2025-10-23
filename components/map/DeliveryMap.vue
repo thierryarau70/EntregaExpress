@@ -1,38 +1,38 @@
 <!-- components/map/DeliveryMap.vue -->
 <template>
   <div class="relative">
-    <!-- Painel de busca -->
-    <div
-        class="absolute left-4 top-4 z-[1000] pointer-events-auto bg-white/90 backdrop-blur
-             px-3 py-3 rounded-lg shadow max-w-[96%] sm:max-w-md space-y-2"
-    >
-      <p class="text-xs text-gray-700">
-        Defina <strong>Coleta (A)</strong> e <strong>Destino (B)</strong> arrastando os pinos no mapa
-        ou buscando por CEP/endereço.
-      </p>
+<!--    &lt;!&ndash; Painel de busca &ndash;&gt;-->
+<!--    <div-->
+<!--        class="absolute left-4 top-4 z-[1000] pointer-events-auto bg-white/90 backdrop-blur-->
+<!--             px-3 py-3 rounded-lg shadow max-w-[96%] sm:max-w-md space-y-2"-->
+<!--    >-->
+<!--      <p class="text-xs text-gray-700">-->
+<!--        Defina <strong>Coleta (A)</strong> e <strong>Destino (B)</strong> arrastando os pinos no mapa-->
+<!--        ou buscando por CEP/endereço.-->
+<!--      </p>-->
 
-      <div class="grid grid-cols-[auto,1fr,auto] items-center gap-2">
-        <span class="inline-flex h-6 w-6 items-center justify-center text-xs font-bold rounded-full bg-emerald-100 text-emerald-700">A</span>
-        <InputText
-            v-model="queryA"
-            class="w-full"
-            placeholder="CEP ou endereço da Coleta (A)"
-            @keyup.enter="searchA"
-        />
-        <Button size="small" @click="searchA" :loading="loadingA">Buscar</Button>
-      </div>
+<!--      <div class="grid grid-cols-[auto,1fr,auto] items-center gap-2">-->
+<!--        <span class="inline-flex h-6 w-6 items-center justify-center text-xs font-bold rounded-full bg-emerald-100 text-emerald-700">A</span>-->
+<!--        <InputText-->
+<!--            v-model="queryA"-->
+<!--            class="w-full"-->
+<!--            placeholder="CEP ou endereço da Coleta (A)"-->
+<!--            @keyup.enter="searchA"-->
+<!--        />-->
+<!--        <Button size="small" @click="searchA" :loading="loadingA">Buscar</Button>-->
+<!--      </div>-->
 
-      <div class="grid grid-cols-[auto,1fr,auto] items-center gap-2">
-        <span class="inline-flex h-6 w-6 items-center justify-center text-xs font-bold rounded-full bg-sky-100 text-sky-700">B</span>
-        <InputText
-            v-model="queryB"
-            class="w-full"
-            placeholder="CEP ou endereço do Destino (B)"
-            @keyup.enter="searchB"
-        />
-        <Button size="small" @click="searchB" :loading="loadingB">Buscar</Button>
-      </div>
-    </div>
+<!--      <div class="grid grid-cols-[auto,1fr,auto] items-center gap-2">-->
+<!--        <span class="inline-flex h-6 w-6 items-center justify-center text-xs font-bold rounded-full bg-sky-100 text-sky-700">B</span>-->
+<!--        <InputText-->
+<!--            v-model="queryB"-->
+<!--            class="w-full"-->
+<!--            placeholder="CEP ou endereço do Destino (B)"-->
+<!--            @keyup.enter="searchB"-->
+<!--        />-->
+<!--        <Button size="small" @click="searchB" :loading="loadingB">Buscar</Button>-->
+<!--      </div>-->
+<!--    </div>-->
 
     <!-- Contêiner do mapa -->
     <div ref="mapEl" class="h-[420px] w-full rounded-xl overflow-hidden ring-1 ring-black/5 z-[0]" />
